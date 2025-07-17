@@ -21,3 +21,6 @@ Testability: Independently test use cases and business rules
 Maintainability: Enforces separation of concerns, easier to debug and refactor
 
 Reusability: Core business logic can be reused across multiple apps or platforms
+
+# This structure Diagram:
+![Clean Architecture Diagram](https://raw.githubusercontent.com/AbdullahAlfaraj/clean-architecture-with-bloc/main/clean_architecture_diagram.png)
