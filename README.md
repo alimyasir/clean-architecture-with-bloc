@@ -14,8 +14,6 @@
 
 # This structure helps in:
 
-# Scalability: Easily add new features
-
-# Testability: Unit test business logic separately
-
-# Maintainability: Clear separation of responsibilities
+Scalability: Easily add new features
+Testability: Unit test business logic separately
+Maintainability: Clear separation of responsibilities
