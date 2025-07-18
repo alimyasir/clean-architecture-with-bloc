@@ -1,26 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'data/datasources/post_remote_data_source.dart';
-import 'data/repositories/post_repository_impl.dart';
-import 'domain/usecases/get_posts_usecase.dart';
-
+import 'injection_container.dart' as di;
 import 'presentation/post_screen/post_screen.dart';
 import 'presentation/post_screen/post_screen_bloc.dart';
 import 'presentation/post_screen/post_screen_event.dart';
 
-void main() {
-  // Setup dependencies
-  final postRemoteDataSource = PostRemoteDataSourceImpl();
-  final postRepository = PostRepositoryImpl(postRemoteDataSource);
-  final getPostsUseCase = GetPostsUseCase(postRepository);
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await di.init(); // Initialize all dependencies
 
-  runApp(MyApp(getPostsUseCase: getPostsUseCase));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final GetPostsUseCase getPostsUseCase;
-  const MyApp({super.key, required this.getPostsUseCase});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +22,7 @@ class MyApp extends StatelessWidget {
       title: 'Clean Architecture BLoC',
       debugShowCheckedModeBanner: false,
       home: BlocProvider(
-        create: (_) => PostBloc(getPostsUseCase)..add(LoadPostsEvent()),
+        create: (_) => di.sl<PostBloc>()..add(LoadPostsEvent()),
         child: const PostScreen(),
       ),
     );
