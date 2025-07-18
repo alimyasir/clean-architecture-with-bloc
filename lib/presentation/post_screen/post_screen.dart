@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'post_screen_bloc.dart';
-import 'post_screen_event.dart';
-import 'post_screen_state.dart';
+import 'bloc/post_screen_bloc.dart';
+import 'bloc/post_screen_event.dart';
+import 'bloc/post_screen_state.dart';
 
 class PostScreen extends StatelessWidget {
   const PostScreen({super.key});

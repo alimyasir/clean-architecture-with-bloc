@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'injection_container.dart' as di;
+import 'presentation/post_screen/bloc/post_screen_event.dart';
 import 'presentation/post_screen/post_screen.dart';
-import 'presentation/post_screen/post_screen_bloc.dart';
-import 'presentation/post_screen/post_screen_event.dart';
+import 'presentation/post_screen/bloc/post_screen_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

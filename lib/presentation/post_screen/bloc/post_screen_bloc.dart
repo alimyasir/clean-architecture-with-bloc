@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
-import 'package:clean_architecture_with_bloc/presentation/post_screen/post_screen_event.dart';
-import 'package:clean_architecture_with_bloc/presentation/post_screen/post_screen_state.dart';
-import '../../../domain/usecases/get_posts_usecase.dart';
+import 'package:clean_architecture_with_bloc/presentation/post_screen/bloc/post_screen_event.dart';
+import 'package:clean_architecture_with_bloc/presentation/post_screen/bloc/post_screen_state.dart';
+import '../../../../domain/usecases/get_posts_usecase.dart';
 
 class PostBloc extends Bloc<PostEvent, PostState> {
   final GetPostsUseCase getPostsUseCase;

@@ -4,7 +4,7 @@ import 'data/datasources/post_remote_data_source.dart';
 import 'data/repositories/post_repository_impl.dart';
 import 'domain/repositories/post_repository.dart';
 import 'domain/usecases/get_posts_usecase.dart';
-import 'presentation/post_screen/post_screen_bloc.dart';
+import 'presentation/post_screen/bloc/post_screen_bloc.dart';
 
 final sl = GetIt.instance; // sl = service locator
 
