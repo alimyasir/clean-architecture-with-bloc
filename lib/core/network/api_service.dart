@@ -1,28 +1,43 @@
+import 'dart:convert';
 import 'package:clean_architecture_with_bloc/core/utils/logger.dart';
-import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
 
 class ApiService {
-  static final Dio dio = Dio(
-    BaseOptions(
-      baseUrl: 'https://jsonplaceholder.typicode.com/',
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-    ),
-  )..interceptors.add(InterceptorsWrapper(
-    onRequest: (options, handler) {
-      // You can add headers or logging here
-      appLog("[Request] => ${options.method} ${options.path}");
-      return handler.next(options);
-    },
-    onResponse: (response, handler) {
-      // Success logs
-      appLog("[Response] => ${response.statusCode} ${response.data}");
-      return handler.next(response);
-    },
-    onError: (DioException e, handler) {
-      // Log errors globally
-      appLog("[DioError] => ${e.type}: ${e.message}");
-      return handler.next(e);
-    },
-  ));
+  static const String baseUrl = 'https://fakestoreapi.com';
+
+  static Future<http.Response> get(String endpoint) async {
+    final url = Uri.parse('$baseUrl$endpoint');
+    appLog("[Request] => GET $url");
+
+    try {
+      final response = await http.get(url);
+
+      appLog("[Response] => ${response.statusCode} ${response.body}");
+      return response;
+    } catch (e) {
+      appLog("[HttpError] => $e");
+      rethrow;
+    }
+  }
+
+  static Future<http.Response> post(String endpoint, Map<String, dynamic> data) async {
+    final url = Uri.parse('$baseUrl$endpoint');
+    appLog("[Request] => POST $url, Body: $data");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+
+      appLog("[Response] => ${response.statusCode} ${response.body}");
+      return response;
+    } catch (e) {
+      appLog("[HttpError] => $e");
+      rethrow;
+    }
+  }
+
+// Add similar functions for PUT, DELETE etc. if needed
 }

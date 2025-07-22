@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'injection_container.dart' as di;
-import 'presentation/post_screen/bloc/post_screen_event.dart';
-import 'presentation/post_screen/post_screen.dart';
-import 'presentation/post_screen/bloc/post_screen_bloc.dart';
+import 'presentation/post_screen/bloc/product_event.dart';
+import 'presentation/post_screen/product_screen.dart';
+import 'presentation/post_screen/bloc/product_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +22,8 @@ class MyApp extends StatelessWidget {
       title: 'Clean Architecture BLoC',
       debugShowCheckedModeBanner: false,
       home: BlocProvider(
-        create: (_) => di.sl<PostBloc>()..add(LoadPostsEvent()),
-        child: const PostScreen(),
+        create: (_) => di.sl<PostBloc>()..add(LoadProductsEvent()),
+        child: const ProductScreen(),
       ),
     );
   }
