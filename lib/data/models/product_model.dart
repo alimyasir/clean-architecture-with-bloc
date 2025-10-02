@@ -2,8 +2,13 @@
 
 import 'package:clean_architecture_with_bloc/domain/entities/product.dart';
 
+import 'package:json_annotation/json_annotation.dart';
+
+part 'product_model.g.dart';
+
+@JsonSerializable()
 class ProductModel extends Product {
-   ProductModel({
+  ProductModel({
     required super.id,
     required super.title,
     required super.price,
@@ -12,25 +17,9 @@ class ProductModel extends Product {
     required super.image,
   });
 
-  factory ProductModel.fromJson(Map<String, dynamic> json) {
-    return ProductModel(
-      id: json['id'] ?? 0,
-      title: json['title'] ?? '',
-      price: (json['price'] ?? 0).toDouble(),
-      description: json['description'] ?? '',
-      category: json['category'] ?? '',
-      image: json['image'] ?? '',
-    );
-  }
+  factory ProductModel.fromJson(Map<String, dynamic> json) =>
+      _$ProductModelFromJson(json);
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'price': price,
-      'description': description,
-      'category': category,
-      'image': image,
-    };
-  }
+  Map<String, dynamic> toJson() => _$ProductModelToJson(this);
 }
+
