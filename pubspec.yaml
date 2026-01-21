@@ -43,6 +43,7 @@ dependencies:
   shimmer: ^2.0.0
   shared_preferences:
   json_annotation: ^4.9.0
+  google_fonts: ^6.1.0 # Added Google Fonts
 
 dev_dependencies:
   flutter_test:

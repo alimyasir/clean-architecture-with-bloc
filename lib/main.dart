@@ -5,6 +5,7 @@ import 'injection_container.dart' as di;
 import 'presentation/post_screen/bloc/product_event.dart';
 import 'presentation/post_screen/product_screen.dart';
 import 'presentation/post_screen/bloc/product_bloc.dart';
+import 'core/theme/app_theme.dart'; // Import the theme
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +21,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Clean Architecture BLoC',
+      theme: AppTheme.lightTheme, // Apply the light theme
+      darkTheme: AppTheme.darkTheme, // Apply the dark theme
+      themeMode: ThemeMode.system, // Use system theme settings
       debugShowCheckedModeBanner: false,
       home: BlocProvider(
         create: (_) => di.sl<PostBloc>()..add(LoadProductsEvent()),

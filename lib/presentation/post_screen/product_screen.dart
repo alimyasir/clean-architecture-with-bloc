@@ -55,28 +55,29 @@ class _ProductScreenState extends State<ProductScreen> {
     if (_searchQuery.isEmpty) return products;
     return products
         .where((product) =>
-        product.title.toLowerCase().contains(_searchQuery.toLowerCase()))
+            product.title.toLowerCase().contains(_searchQuery.toLowerCase()))
         .toList();
   }
 
-  Widget _buildShimmerItem() {
+  Widget _buildShimmerItem(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 4,
+      // Card styling now comes from cardTheme in AppTheme.dart
       child: Shimmer.fromColors(
-        baseColor: Colors.grey.shade300,
-        highlightColor: Colors.grey.shade100,
+        baseColor: colorScheme.surfaceVariant, // Using theme color
+        highlightColor: colorScheme.onSurface.withOpacity(0.1), // Using theme color
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: Container(color: Colors.white)),
+            Expanded(
+                child: Container(color: colorScheme.surfaceVariant.withOpacity(0.5))),
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Container(height: 14, color: Colors.white),
+              child: Container(height: 14, color: colorScheme.surfaceVariant.withOpacity(0.5)),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Container(height: 14, width: 60, color: Colors.white),
+              child: Container(height: 14, width: 60, color: colorScheme.surfaceVariant.withOpacity(0.5)),
             ),
             const SizedBox(height: 8),
           ],
@@ -87,8 +88,13 @@ class _ProductScreenState extends State<ProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Shopping Catalog")),
+      appBar: AppBar(
+        title: Text("Shopping Catalog", style: textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary)), // AppBar title style from theme
+      ),
       body: BlocBuilder<PostBloc, ProductState>(
         builder: (context, state) {
           if (state is ProductLoading) {
@@ -98,44 +104,43 @@ class _ProductScreenState extends State<ProductScreen> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.7,
+                childAspectRatio: 0.7, // Adjust as needed for your content
               ),
               itemCount: 6,
-              itemBuilder: (_, __) => _buildShimmerItem(),
+              itemBuilder: (ctx, __) => _buildShimmerItem(ctx),
             );
-          } else if (state is ProductLoaded) {
+          }
+          if (state is ProductLoaded) {
             final products = _filterProducts(state.products);
-
             return Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(16.0), // Increased padding
                   child: TextField(
                     controller: _searchController,
-                    onChanged: (value) =>
-                        setState(() => _searchQuery = value),
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                    style: textTheme.bodyLarge, // TextField text style from theme
                     decoration: InputDecoration(
                       hintText: 'Search products...',
-                      isDense: true,
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      // InputDecoration styling now primarily from inputDecorationTheme
+                      prefixIcon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                  child: DropdownButton<String>(
-                    isExpanded: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  child: DropdownButtonFormField<String>(
+                    // Using DropdownButtonFormField for better integration with InputDecorationTheme
                     value: state.selectedCategory,
-                    hint: const Text('Filter by Category'),
+                    hint: Text('Filter by Category', style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
+                    decoration: const InputDecoration(), // Uses inputDecorationTheme
                     items: [
-                      const DropdownMenuItem<String>(
-                          value: null, child: Text('All Categories')),
+                      DropdownMenuItem<String>(
+                          value: null, child: Text('All Categories', style: textTheme.bodyMedium)),
                       ...state.categories.map((category) => DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      )),
+                            value: category,
+                            child: Text(category, style: textTheme.bodyMedium),
+                          )),
                     ],
                     onChanged: (value) {
                       if (value == null) {
@@ -146,20 +151,22 @@ class _ProductScreenState extends State<ProductScreen> {
                             .add(FilterByCategoryEvent(value));
                       }
                     },
+                    isExpanded: true,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () async => _onRefresh(),
+                    color: colorScheme.primary, // RefreshIndicator color from theme
                     child: GridView.builder(
                       padding: const EdgeInsets.all(12),
                       gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.7,
+                        crossAxisSpacing: 12, // Spacing between cards
+                        mainAxisSpacing: 12,  // Spacing between card rows
+                        childAspectRatio: 0.7, // Adjust as needed
                       ),
                       itemCount: products.length,
                       itemBuilder: (context, index) {
@@ -169,47 +176,47 @@ class _ProductScreenState extends State<ProductScreen> {
                         return GestureDetector(
                           onTap: () => _toggleFavorite(product.id),
                           child: Card(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            elevation: 4,
+                            // Card styling now comes from cardTheme
+                            // No need to set shape or elevation here explicitly
+                            clipBehavior: Clip.antiAlias, // Ensures content respects card shape
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Expanded(
-                                  child: ClipRRect(
-                                    borderRadius:
-                                    const BorderRadius.vertical(
-                                        top: Radius.circular(12)),
-                                    child: Image.network(
-                                      product.image,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                      const Icon(Icons.broken_image),
+                                  child: Image.network(
+                                    product.image,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Center(
+                                      child: Icon(
+                                        Icons.broken_image,
+                                        color: colorScheme.onSurface.withOpacity(0.5),
+                                        size: 40,
+                                      ),
                                     ),
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.all(8.0),
+                                  padding: const EdgeInsets.all(10.0), // Adjusted padding
                                   child: Text(
                                     product.title,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold),
+                                    style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600), // Using theme text style
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8.0),
+                                  padding: const EdgeInsets.only(left: 10.0, right: 10.0, bottom: 10.0), // Adjusted padding
                                   child: Row(
                                     mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                          "\$${product.price.toStringAsFixed(2)}"),
+                                        "\$${product.price.toStringAsFixed(2)}",
+                                        style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary),
+                                      ),
                                       AnimatedSwitcher(
                                         duration:
-                                        const Duration(milliseconds: 300),
+                                            const Duration(milliseconds: 300),
                                         transitionBuilder:
                                             (child, animation) {
                                           return ScaleTransition(
@@ -221,14 +228,13 @@ class _ProductScreenState extends State<ProductScreen> {
                                               : Icons.favorite_border,
                                           key: ValueKey<bool>(isFavorite),
                                           color: isFavorite
-                                              ? Colors.red
-                                              : Colors.grey,
+                                              ? colorScheme.primary // Favorite color from theme
+                                              : colorScheme.onSurface.withOpacity(0.6), // Default icon color from theme
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 8),
                               ],
                             ),
                           ),
@@ -239,10 +245,11 @@ class _ProductScreenState extends State<ProductScreen> {
                 ),
               ],
             );
-          } else if (state is ProductError) {
-            return Center(child: Text("Error: ${state.message}"));
           }
-          return const Center(child: Text("No products found."));
+          if (state is ProductError) {
+            return Center(child: Text("Error: ${state.message}", style: textTheme.bodyLarge?.copyWith(color: colorScheme.error)));
+          }
+          return Center(child: Text("No products found.", style: textTheme.bodyLarge));
         },
       ),
     );
