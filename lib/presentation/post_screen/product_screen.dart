@@ -1,256 +1,370 @@
-import 'package:clean_architecture_with_bloc/domain/entities/product.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+
 import 'bloc/product_bloc.dart';
 import 'bloc/product_event.dart';
 import 'bloc/product_state.dart';
 
-class ProductScreen extends StatefulWidget {
+class ProductScreen extends StatelessWidget {
   const ProductScreen({super.key});
 
   @override
-  State<ProductScreen> createState() => _ProductScreenState();
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          'Shopping Catalog',
+          style: textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary),
+        ),
+      ),
+      body: BlocConsumer<ProductBloc, ProductState>(
+        // Only show snackbar when state becomes an error
+        listenWhen: (previous, current) =>
+            current is ProductError && previous is! ProductError,
+        listener: (context, state) {
+          if (state is ProductError) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: colorScheme.error,
+                  action: SnackBarAction(
+                    label: 'Retry',
+                    textColor: colorScheme.onError,
+                    onPressed: () => context
+                        .read<ProductBloc>()
+                        .add(const LoadProductsEvent()),
+                  ),
+                ),
+              );
+          }
+        },
+        builder: (context, state) {
+          // Dart 3 exhaustive switch — compiler catches missing cases
+          return switch (state) {
+            ProductInitial() => const SizedBox.shrink(),
+            ProductLoading() => const _ShimmerGrid(),
+            ProductLoaded() => _ProductContent(state: state),
+            ProductError() => _ErrorView(message: state.message),
+          };
+        },
+      ),
+    );
+  }
 }
 
-class _ProductScreenState extends State<ProductScreen> {
-  Set<int> _favorites = {};
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
+// ── Shimmer skeleton ─────────────────────────────────────────────────────────
+
+class _ShimmerGrid extends StatelessWidget {
+  const _ShimmerGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.7,
+      ),
+      itemCount: 6,
+      itemBuilder: (_, __) => Card(
+        clipBehavior: Clip.antiAlias,
+        child: Shimmer.fromColors(
+          baseColor: colorScheme.surfaceContainerHighest,
+          highlightColor: colorScheme.onSurface.withValues(alpha: 0.08),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: Container(color: colorScheme.surfaceContainerHighest)),
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: Container(height: 14, color: colorScheme.surfaceContainerHighest),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Container(
+                    height: 14, width: 60, color: colorScheme.surfaceContainerHighest),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Loaded content ───────────────────────────────────────────────────────────
+
+class _ProductContent extends StatefulWidget {
+  final ProductLoaded state;
+
+  const _ProductContent({required this.state});
+
+  @override
+  State<_ProductContent> createState() => _ProductContentState();
+}
+
+class _ProductContentState extends State<_ProductContent> {
+  // Controller lives here only to support programmatic clear (X button).
+  // All search logic lives in ProductBloc.
+  late final TextEditingController _searchController;
 
   @override
   void initState() {
     super.initState();
-    context.read<PostBloc>().add(LoadProductsEvent());
-    _loadFavorites();
+    _searchController = TextEditingController(text: widget.state.searchQuery);
   }
 
-  Future<void> _loadFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    final storedFavorites = prefs.getStringList('favorites') ?? [];
-    setState(() {
-      _favorites = storedFavorites.map(int.parse).toSet();
-    });
-  }
-
-  Future<void> _toggleFavorite(int productId) async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _favorites.contains(productId)
-          ? _favorites.remove(productId)
-          : _favorites.add(productId);
-    });
-    await prefs.setStringList(
-      'favorites',
-      _favorites.map((id) => id.toString()).toList(),
-    );
-  }
-
-  void _onRefresh() {
-    context.read<PostBloc>().add(LoadProductsEvent());
-  }
-
-  List<Product> _filterProducts(List<Product> products) {
-    if (_searchQuery.isEmpty) return products;
-    return products
-        .where((product) =>
-            product.title.toLowerCase().contains(_searchQuery.toLowerCase()))
-        .toList();
-  }
-
-  Widget _buildShimmerItem(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Card(
-      // Card styling now comes from cardTheme in AppTheme.dart
-      child: Shimmer.fromColors(
-        baseColor: colorScheme.surfaceVariant, // Using theme color
-        highlightColor: colorScheme.onSurface.withOpacity(0.1), // Using theme color
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-                child: Container(color: colorScheme.surfaceVariant.withOpacity(0.5))),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(height: 14, color: colorScheme.surfaceVariant.withOpacity(0.5)),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Container(height: 14, width: 60, color: colorScheme.surfaceVariant.withOpacity(0.5)),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+    final state = widget.state;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Shopping Catalog", style: textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary)), // AppBar title style from theme
-      ),
-      body: BlocBuilder<PostBloc, ProductState>(
-        builder: (context, state) {
-          if (state is ProductLoading) {
-            return GridView.builder(
-              padding: const EdgeInsets.all(12),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.7, // Adjust as needed for your content
-              ),
-              itemCount: 6,
-              itemBuilder: (ctx, __) => _buildShimmerItem(ctx),
-            );
-          }
-          if (state is ProductLoaded) {
-            final products = _filterProducts(state.products);
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0), // Increased padding
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                    style: textTheme.bodyLarge, // TextField text style from theme
-                    decoration: InputDecoration(
-                      hintText: 'Search products...',
-                      // InputDecoration styling now primarily from inputDecorationTheme
-                      prefixIcon: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                  child: DropdownButtonFormField<String>(
-                    // Using DropdownButtonFormField for better integration with InputDecorationTheme
-                    value: state.selectedCategory,
-                    hint: Text('Filter by Category', style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant)),
-                    decoration: const InputDecoration(), // Uses inputDecorationTheme
-                    items: [
-                      DropdownMenuItem<String>(
-                          value: null, child: Text('All Categories', style: textTheme.bodyMedium)),
-                      ...state.categories.map((category) => DropdownMenuItem(
-                            value: category,
-                            child: Text(category, style: textTheme.bodyMedium),
-                          )),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) {
-                        context.read<PostBloc>().add(LoadProductsEvent());
-                      } else {
+    return Column(
+      children: [
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: TextField(
+            controller: _searchController,
+            style: textTheme.bodyLarge,
+            onChanged: (value) =>
+                context.read<ProductBloc>().add(SearchProductsEvent(value)),
+            decoration: InputDecoration(
+              hintText: 'Search products...',
+              prefixIcon:
+                  Icon(Icons.search, color: colorScheme.onSurfaceVariant),
+              suffixIcon: state.searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
                         context
-                            .read<PostBloc>()
-                            .add(FilterByCategoryEvent(value));
-                      }
-                    },
-                    isExpanded: true,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () async => _onRefresh(),
-                    color: colorScheme.primary, // RefreshIndicator color from theme
-                    child: GridView.builder(
-                      padding: const EdgeInsets.all(12),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12, // Spacing between cards
-                        mainAxisSpacing: 12,  // Spacing between card rows
-                        childAspectRatio: 0.7, // Adjust as needed
-                      ),
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        final product = products[index];
-                        final isFavorite = _favorites.contains(product.id);
+                            .read<ProductBloc>()
+                            .add(const SearchProductsEvent(''));
+                      },
+                    )
+                  : null,
+            ),
+          ),
+        ),
 
-                        return GestureDetector(
-                          onTap: () => _toggleFavorite(product.id),
-                          child: Card(
-                            // Card styling now comes from cardTheme
-                            // No need to set shape or elevation here explicitly
-                            clipBehavior: Clip.antiAlias, // Ensures content respects card shape
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: Image.network(
-                                    product.image,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Center(
-                                      child: Icon(
-                                        Icons.broken_image,
-                                        color: colorScheme.onSurface.withOpacity(0.5),
-                                        size: 40,
-                                      ),
+        // Category filter
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: DropdownButtonFormField<String>(
+            initialValue: state.selectedCategory,
+            isExpanded: true,
+            decoration: const InputDecoration(),
+            hint: Text(
+              'Filter by Category',
+              style: textTheme.bodyMedium
+                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+            ),
+            items: [
+              DropdownMenuItem<String>(
+                value: null,
+                child: Text('All Categories', style: textTheme.bodyMedium),
+              ),
+              ...state.categories.map(
+                (c) => DropdownMenuItem<String>(
+                  value: c,
+                  child: Text(c, style: textTheme.bodyMedium),
+                ),
+              ),
+            ],
+            // null → FilterByCategoryEvent(null) resets without API call
+            onChanged: (value) =>
+                context.read<ProductBloc>().add(FilterByCategoryEvent(value)),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Grid or empty state
+        Expanded(
+          child: RefreshIndicator(
+            color: colorScheme.primary,
+            onRefresh: () async =>
+                context.read<ProductBloc>().add(const LoadProductsEvent()),
+            child: state.products.isEmpty
+                ? _EmptyState(searchQuery: state.searchQuery)
+                : GridView.builder(
+                    padding: const EdgeInsets.all(12),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 0.7,
+                    ),
+                    itemCount: state.products.length,
+                    itemBuilder: (context, index) {
+                      final product = state.products[index];
+                      // Reads from BLoC state — single source of truth
+                      final isFavorite = state.favorites.contains(product.id);
+
+                      return GestureDetector(
+                        onTap: () => context
+                            .read<ProductBloc>()
+                            .add(ToggleFavoriteEvent(product.id)),
+                        child: Card(
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: Image.network(
+                                  product.image,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color: colorScheme.onSurface
+                                          .withValues(alpha: 0.5),
+                                      size: 40,
                                     ),
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(10.0), // Adjusted padding
-                                  child: Text(
-                                    product.title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600), // Using theme text style
-                                  ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Text(
+                                  product.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 10.0, right: 10.0, bottom: 10.0), // Adjusted padding
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        "\$${product.price.toStringAsFixed(2)}",
-                                        style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    left: 10, right: 10, bottom: 10),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '\$${product.price.toStringAsFixed(2)}',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.primary,
                                       ),
-                                      AnimatedSwitcher(
-                                        duration:
-                                            const Duration(milliseconds: 300),
-                                        transitionBuilder:
-                                            (child, animation) {
-                                          return ScaleTransition(
-                                              scale: animation, child: child);
-                                        },
-                                        child: Icon(
-                                          isFavorite
-                                              ? Icons.favorite
-                                              : Icons.favorite_border,
-                                          key: ValueKey<bool>(isFavorite),
-                                          color: isFavorite
-                                              ? colorScheme.primary // Favorite color from theme
-                                              : colorScheme.onSurface.withOpacity(0.6), // Default icon color from theme
-                                        ),
+                                    ),
+                                    AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 300),
+                                      transitionBuilder: (child, animation) =>
+                                          ScaleTransition(
+                                              scale: animation, child: child),
+                                      child: Icon(
+                                        isFavorite
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        key: ValueKey<bool>(isFavorite),
+                                        color: isFavorite
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurface
+                                                .withValues(alpha: 0.6),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                ),
-              ],
-            );
-          }
-          if (state is ProductError) {
-            return Center(child: Text("Error: ${state.message}", style: textTheme.bodyLarge?.copyWith(color: colorScheme.error)));
-          }
-          return Center(child: Text("No products found.", style: textTheme.bodyLarge));
-        },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Empty state ──────────────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  final String searchQuery;
+
+  const _EmptyState({required this.searchQuery});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off,
+              size: 64, color: colorScheme.onSurface.withValues(alpha: 0.35)),
+          const SizedBox(height: 16),
+          Text(
+            searchQuery.isEmpty
+                ? 'No products found.'
+                : 'No results for "$searchQuery".',
+            style: textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Error view ───────────────────────────────────────────────────────────────
+
+class _ErrorView extends StatelessWidget {
+  final String message;
+
+  const _ErrorView({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: colorScheme.error),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: textTheme.bodyLarge?.copyWith(color: colorScheme.error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => context
+                  .read<ProductBloc>()
+                  .add(const LoadProductsEvent()),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,51 +1,58 @@
-
 import 'package:clean_architecture_with_bloc/domain/entities/product.dart';
 import 'package:equatable/equatable.dart';
 
-abstract class ProductState extends Equatable {
+sealed class ProductState extends Equatable {
   const ProductState();
 
   @override
   List<Object?> get props => [];
 }
 
-class ProductInitial extends ProductState {}
+final class ProductInitial extends ProductState {
+  const ProductInitial();
+}
 
-class ProductLoading extends ProductState {}
+final class ProductLoading extends ProductState {
+  const ProductLoading();
+}
 
-class ProductLoaded extends ProductState {
+final class ProductLoaded extends ProductState {
   final List<Product> products;
   final List<int> favorites;
-  final String? selectedCategory; // null means "All"
   final List<String> categories;
+  final String? selectedCategory;
+  final String searchQuery;
 
-  const ProductLoaded(
-      this.products,
-      this.favorites, {
-        this.selectedCategory,
-        this.categories = const [],
-      });
+  const ProductLoaded({
+    required this.products,
+    required this.favorites,
+    required this.categories,
+    this.selectedCategory,
+    this.searchQuery = '',
+  });
 
   ProductLoaded copyWith({
     List<Product>? products,
     List<int>? favorites,
-    String? selectedCategory,
     List<String>? categories,
+    String? selectedCategory,
+    String? searchQuery,
+    bool clearCategory = false,
   }) {
     return ProductLoaded(
-      products ?? this.products,
-      favorites ?? this.favorites,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
+      products: products ?? this.products,
+      favorites: favorites ?? this.favorites,
       categories: categories ?? this.categories,
+      selectedCategory: clearCategory ? null : (selectedCategory ?? this.selectedCategory),
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 
   @override
-  List<Object?> get props => [products, favorites, selectedCategory, categories];
+  List<Object?> get props => [products, favorites, categories, selectedCategory, searchQuery];
 }
 
-
-class ProductError extends ProductState {
+final class ProductError extends ProductState {
   final String message;
 
   const ProductError(this.message);

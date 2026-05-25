@@ -6,23 +6,22 @@ import 'domain/repositories/product_repository.dart';
 import 'domain/usecases/get_products_usecase.dart';
 import 'presentation/post_screen/bloc/product_bloc.dart';
 
-final sl = GetIt.instance; // sl = service locator
+final sl = GetIt.instance;
 
 Future<void> init() async {
-  // BLoC
-  // sl.registerFactory(() => PostBloc(sl()));
-  sl.registerLazySingleton(() => PostBloc(sl()));
+  // Factory: fresh BLoC instance per BlocProvider — no stale state across navigations
+  sl.registerFactory(() => ProductBloc(sl()));
 
   // Use Cases
   sl.registerLazySingleton(() => GetProductUseCase(sl()));
 
   // Repositories
   sl.registerLazySingleton<ProductRepository>(
-        () => ProductRepositoryImpl(sl()),
+    () => ProductRepositoryImpl(sl()),
   );
 
-  // Data sources
+  // Data Sources
   sl.registerLazySingleton<ProductRemoteDataSource>(
-        () => ProductRemoteDataSourceImpl(),
+    () => ProductRemoteDataSourceImpl(),
   );
 }
